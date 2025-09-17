@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """
 SQLiPwn Report Generator
-Professional HTML and JSON reporting for SQL injection vulnerabilities
-Optimized version with improved performance and functionality
 """
 
 import json
@@ -14,7 +12,7 @@ from typing import List, Dict
 from colorama import Fore
 
 class ReportGenerator:
-    """Professional reporting system with HTML dashboard and JSON export"""
+
     
     def __init__(self, target_url: str):
         self.vulnerabilities = []
@@ -28,25 +26,25 @@ class ReportGenerator:
         }
     
     def _extract_domain(self, url: str) -> str:
-        """Extract clean domain name from URL for filename"""
+
         try:
             parsed = urlparse(url)
             domain = parsed.netloc
-            # Remove www. prefix and clean up
+
             if domain.startswith('www.'):
                 domain = domain[4:]
-            # Replace dots and colons with underscores for filename
+
             return domain.replace('.', '_').replace(':', '_')
         except:
             return "target"
     
     def add_vulnerability(self, vuln):
-        """Add vulnerability and display real-time"""
+
         self.vulnerabilities.append(vuln)
         self._display_vulnerability(vuln)
     
     def _display_vulnerability(self, vuln):
-        """Display vulnerability in real-time with color coding"""
+
         colors = {'HIGH': Fore.RED, 'MEDIUM': Fore.YELLOW, 'LOW': Fore.CYAN}
         color = colors.get(vuln.confidence, Fore.WHITE)
         
@@ -65,7 +63,7 @@ class ReportGenerator:
         print(f"{color}{'='*70}\n")
     
     def generate_html_report(self, filename: str = None) -> str:
-        """Generate professional HTML dashboard report"""
+
         if not filename:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f"sqlipwn_report_{self.target_domain}_{timestamp}.html"
@@ -82,8 +80,8 @@ class ReportGenerator:
         return filename
     
     def _generate_html_content(self, duration) -> str:
-        """Generate the complete HTML content for the report"""
-        # Generate vulnerability cards
+
+
         vuln_html = ""
         if self.vulnerabilities:
             for i, vuln in enumerate(self.vulnerabilities, 1):
@@ -91,7 +89,7 @@ class ReportGenerator:
                 confidence_class = f"confidence-{vuln.confidence.lower()}"
                 auth_badge = "auth-yes" if vuln.authenticated else "auth-no"
                 
-                # Properly escape quotes and special characters for JavaScript
+
                 escaped_sqlmap = (vuln.sqlmap_command
                                 .replace('\\', '\\\\')
                                 .replace("'", "\\'")
@@ -99,7 +97,7 @@ class ReportGenerator:
                                 .replace('\n', '\\n')
                                 .replace('\r', '\\r'))
                 
-                # Escape HTML content
+
                 def html_escape(text):
                     return (str(text)
                            .replace('&', '&amp;')
@@ -172,7 +170,7 @@ class ReportGenerator:
             </div>
             '''
         
-        # Build complete HTML document
+
         current_time = datetime.now().strftime("%B %d, %Y at %H:%M:%S")
         duration_str = str(duration).split('.')[0]
         
@@ -739,7 +737,7 @@ class ReportGenerator:
 </html>"""
     
     def generate_json_report(self, filename: str = None) -> str:
-        """Generate JSON report for machine processing"""
+
         if not filename:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f"sqlipwn_report_{self.target_domain}_{timestamp}.json"
@@ -775,7 +773,7 @@ class ReportGenerator:
         return filename
     
     def display_summary(self):
-        """Display final scan summary"""
+
         duration = datetime.now() - self.start_time
         
         print(f"\n{Fore.CYAN}{'='*70}")
