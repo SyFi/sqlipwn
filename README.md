@@ -230,15 +230,6 @@ Users are solely responsible for ensuring they have proper authorization before 
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our contribution guidelines:
-
-### How to Contribute
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit your changes** (`git commit -m 'Add amazing feature'`)
-4. **Push to the branch** (`git push origin feature/amazing-feature`)
-5. **Open a Pull Request**
-
 ### Areas for Contribution
 - New injection detection techniques
 - Additional database support
@@ -290,11 +281,6 @@ We welcome contributions! Please see our contribution guidelines:
 
 **Created by**: syfi
 
-### Acknowledgments
-- SQLMap team for inspiration and techniques
-- OWASP community for security research
-- Security researchers and bug bounty hunters
-- Open source contributors
 
 ## 📜 License
 
