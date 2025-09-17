@@ -25,6 +25,7 @@
 ### Core Capabilities
 - **Advanced SQL Injection Detection** - Error-based, Boolean blind, Time-based, Union-based
 - **Multi-threaded Scanning** - Configurable thread pools for optimal performance
+- **Http Requests** - GET and POST
 - **Intelligent Web Crawling** - Automated parameter discovery with smart link prioritization
 - **Authentication Support** - Session cookies, custom headers, and auth testing
 - **Professional Reporting** - Interactive HTML dashboards and JSON exports
